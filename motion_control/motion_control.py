@@ -11,7 +11,9 @@
 
 import rclpy
 from rclpy.node import Node
+
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Joy
 from core.msg import Float32Arr
 from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange
 
@@ -24,11 +26,17 @@ class MotionController(Node):
 
         # Quick reference for logging
         self.log = self.get_logger()
+
+        self.thrusters_enabled = False
+        self.cached_input = False
         
         # Declare Publishers and Subscribers
         self.vector_sub = self.create_subscription(Twist, 'cmd_vel', self.vector_callback, 10)
-        self.vector_sub # Just so it doesn't give that annoying "unused variable" warning
+        self.joy_sub = self.create_subscription(Joy, 'joy', self.joy_callback, 10)
+        self.joy_sub # Just so it doesn't give that annoying "unused variable" warning
+        self.vector_sub 
         self.effort_pub = self.create_publisher(Float32Arr, 'thrusters', 10)
+        
 
         # Define parameters
         sensitivity_bounds = FloatingPointRange()
@@ -39,14 +47,12 @@ class MotionController(Node):
         self.declare_parameter('lateral_sensitivity', 0.5, sensitivity_descriptor)
         self.declare_parameter('vertical_sensitivity', 0.5, sensitivity_descriptor)
         self.declare_parameter('angular_sensitivity', 0.5, sensitivity_descriptor)
-        self.declare_parameter('thruster_status', False)
 
     def vector_callback(self, v):
 
         lateral_sensitivity = self.get_parameter('lateral_sensitivity').value
         vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
         angular_sensitivity = self.get_parameter('angular_sensitivity').value
-        thruster_status = self.get_parameter('thruster_status').value
 
         linearX = v.linear.x * lateral_sensitivity
         linearY = v.linear.y * vertical_sensitivity
@@ -56,15 +62,26 @@ class MotionController(Node):
         # TEMPORARY: Turns vectors into thruster effort values.
         # Will be changed in advanced MoCo Rewrite
         thruster_vals = Float32Arr()
-        thruster_vals.array = [
-            linearX + linearZ + angularZ,
-            -linearX + linearZ - angularZ,
-            linearX - linearZ - angularZ,
-            -linearX - linearZ + angularZ,
-            linearY, 
-            linearY ]
+        
+        if self.thrusters_enabled:
+            thruster_vals.array = [
+                linearX + linearZ + angularZ,
+                -linearX + linearZ - angularZ,
+                linearX - linearZ - angularZ,
+                -linearX - linearZ + angularZ,
+                linearY, 
+                linearY ]
+        else:
+            thruster_vals.array = [ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 ]
         
         self.effort_pub.publish(thruster_vals)
+
+    def joy_callback(self, joy):
+        if joy.buttons[8] and not self.cached_input:
+            self.thrusters_enabled = not self.thrusters_enabled
+            if self.thrusters_enabled: self.log.info("Thrusters enabled")
+            else: self.log.info("Thrusters disabled")
+        self.cached_input = joy.buttons[8]
 
 def main(args=None):
     rclpy.init(args=args)
