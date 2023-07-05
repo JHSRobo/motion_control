@@ -37,9 +37,6 @@ from geometry_msgs.msg import Twist, Quaternion
 from std_msgs.msg import Float32
 from tf2_ros import TransformBroadcaster, TransformStamped
 from core_lib import quaternion_math, motion_simulator
-from core.msg import Float32Arr
-
-from math import sin, cos, pi
 
 class StatePublisher(Node):
 
@@ -67,41 +64,37 @@ class StatePublisher(Node):
         self.height = 0
         self.rotation = Quaternion()
 
+        self.odom_trans = TransformStamped()
+
 
     def vector_callback(self, v):
 
-        odom_trans = TransformStamped() # Represents cmd_vel but with transforms
-
         # Static world frame of referece - what the ROV moves in relation to
         # odom is short for odometry, or the static world frame.
-        odom_trans.header.frame_id = 'odom' 
+        self.odom_trans.header.frame_id = 'base_link' 
         # ROV frame of reference - defined in our URDF file
-        odom_trans.child_frame_id = 'base_link'
+        self.odom_trans.child_frame_id = 'base_link'
         
         now = self.get_clock().now() # Get current time
-
-        # Update position simulations
-        self.xsim.update_position(v.linear.x)
-        self.ysim.update_position(v.linear.y)
 
         # Generate a quaternion based on our commanded velocity
         # euler_to_quaternion was written by us, and can be found in the core pkg
         desired_rotation = quaternion_math.euler_to_quaternion(
             v.angular.x, v.angular.y, v.angular.z)
 
-        # Update transforms
-        odom_trans.header.stamp = now.to_msg()
-        odom_trans.transform.translation.x = self.xsim.get_position() + v.linear.x
-        odom_trans.transform.translation.y = self.ysim.get_position() + v.linear.y
-        odom_trans.transform.translation.z = self.height + v.linear.z
+        # Update transforms (Temporarily just adding vectors)
+        self.odom_trans.header.stamp = now.to_msg()
+        self.odom_trans.transform.translation.x += v.linear.x
+        self.odom_trans.transform.translation.y += v.linear.y
+        self.odom_trans.transform.translation.z += v.linear.z
         
         # quaternion_multiply was written by us, and can be found in the core pkg
         # It applies the second quaternion as a transformation to the first one.
-        odom_trans.transform.rotation = quaternion_math.quaternion_multiply(
-            self.rotation, desired_rotation)
+        self.odom_trans.transform.rotation = quaternion_math.quaternion_multiply(
+            self.odom_trans.transform.rotation, desired_rotation)
 
         # Broadcast them transformations
-        self.broadcaster.sendTransform(odom_trans)
+        self.broadcaster.sendTransform(self.odom_trans)
 
 
     def depth_callback(self, depth):
