@@ -5,8 +5,7 @@
   # This is the best step for implementing things like sensitivity / thruster status
 
 # This is the "First Step" in our motion control software.
-# We publish a twist msg with a linear and rotational vector
-# The conversion into the transform frame is done by transforms.py
+# We publish a twist msg with a linear and rotational vector.
 
 # Written by James Randall '24
 

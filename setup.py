@@ -21,7 +21,6 @@ setup(
     entry_points={
         'console_scripts': [
             'vector_conversion = motion_control.vector_conversion:main',
-            'transforms = motion_control.transforms:main',
         ],
     },
 )
