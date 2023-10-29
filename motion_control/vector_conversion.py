@@ -15,6 +15,10 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange
+from std_srvs.srv import SetBool, Trigger
+
+from core.msg import Sensitivity
+import time
 
 
 # This is the class that ROS2 spins up as a node
@@ -33,7 +37,16 @@ class VectorConverter(Node):
         
         # Declare Publishers and Subscribers
         self.vector_pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.sensitivity_pub = self.create_publisher(Sensitivity, 'sensitivity', 10)
         self.joy_sub = self.create_subscription(Joy, 'joy', self.joy_callback, 10)
+
+        # Create a service for updating the camera feed with thruster status
+        self.thruster_status_client = self.create_client(SetBool, 'thruster_status')
+        # Create a service for publishing a sensitivity msg upon request
+        self.first_sense_srv = self.create_service(Trigger, 'first_sensitivity', self.first_sense_callback)
+
+        # Create a timer that checks for updated parameters 5x /second
+        self.create_timer(0.2, self.update_parameters)
 
         # Define parameters
 
@@ -45,11 +58,53 @@ class VectorConverter(Node):
         sensitivity_bounds.step = 0.01
         sensitivity_descriptor = ParameterDescriptor(floating_point_range = [sensitivity_bounds])
 
+        # Define the initial values for each sense
+        self.horizontal_sensitivity = 0.5
+        self.vertical_sensitivity = 0.5
+        self.angular_sensitivity = 0.3
+
         # Defines the settings that the GUI can actually control
-        self.declare_parameter('lateral_sensitivity', 0.5, sensitivity_descriptor)
-        self.declare_parameter('vertical_sensitivity', 0.5, sensitivity_descriptor)
-        self.declare_parameter('angular_sensitivity', 0.5, sensitivity_descriptor)
-        self.declare_parameter('roll_control', False)
+        self.declare_parameter('horizontal_sensitivity', self.horizontal_sensitivity, sensitivity_descriptor)
+        self.declare_parameter('vertical_sensitivity', self.vertical_sensitivity, sensitivity_descriptor)
+        self.declare_parameter('angular_sensitivity', self.angular_sensitivity, sensitivity_descriptor)
+
+    # Publish our sensitivity for the first time
+    # Almost the same as param_callback
+    def first_sense_callback(self, request, response):
+        self.horizontal_sensitivity = self.get_parameter('horizontal_sensitivity').value
+        self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
+        self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
+        sense_msg = Sensitivity()
+        sense_msg.horizontal = self.horizontal_sensitivity
+        sense_msg.vertical = self.vertical_sensitivity
+        sense_msg.angular = self.angular_sensitivity
+        self.sensitivity_pub.publish(sense_msg)
+        return response
+
+
+    # Update our parameters with the most recent settings from the GUI
+    # The reason that this is not a parameter callback is because
+    # That caused some VERY strange desync issues.
+    def update_parameters(self):
+
+        # Boolean for if the sensitivities have changed or not
+        change = (self.horizontal_sensitivity != self.get_parameter('horizontal_sensitivity').value 
+                  or self.vertical_sensitivity != self.get_parameter('vertical_sensitivity').value
+                  or self.angular_sensitivity != self.get_parameter('angular_sensitivity').value)
+
+        # Update the values of our settings to reflect the parameters
+        self.horizontal_sensitivity = self.get_parameter('horizontal_sensitivity').value
+        self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
+        self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
+        
+        # Populate a sensitivity message and publish it
+        # Used by the camera viewer to show to the pilot
+        if change:
+            sense_msg = Sensitivity()
+            sense_msg.horizontal = self.horizontal_sensitivity
+            sense_msg.vertical = self.vertical_sensitivity
+            sense_msg.angular = self.angular_sensitivity
+            self.sensitivity_pub.publish(sense_msg)
 
 
     def joy_callback(self, joy):
@@ -59,13 +114,13 @@ class VectorConverter(Node):
             self.thrusters_enabled = not self.thrusters_enabled
             if self.thrusters_enabled: self.log.info("Thrusters enabled")
             else: self.log.info("Thrusters disabled")
-        self.cached_input = joy.buttons[8]
 
-        # Update our parameters with the most recent settings from the GUI
-        lateral_sensitivity = self.get_parameter('lateral_sensitivity').value
-        vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
-        angular_sensitivity = self.get_parameter('angular_sensitivity').value
-        roll_enabled = self.get_parameter('roll_control').value
+            # Update camera viewer with thruster status
+            thruster_srv = SetBool.Request()
+            thruster_srv.data = self.thrusters_enabled
+            self.future = self.thruster_status_client.call_async(thruster_srv)
+
+        self.cached_input = joy.buttons[8]
 
         # Create a twist message and populate it with joystick input
         # x is forwards, y is left, z is up.
@@ -73,20 +128,18 @@ class VectorConverter(Node):
         v.linear.x = joy.axes[1]
         v.linear.y = joy.axes[0]
         v.linear.z = joy.axes[4]
-        
-        # Here is our custom roll implementation: We use the triggers
-        roll = (joy.axes[2] - joy.axes[5]) / 2
-        if roll_enabled: v.angular.x = roll
 
+        # Get roll effort from the controller triggers
+        v.angular.x = (joy.axes[2] - joy.axes[5]) / 2
         # We skip angular.y because no pitch control... sadge...
         v.angular.z = joy.axes[3]
 
         # Scale effort values based on sensitivity
-        v.linear.x *= lateral_sensitivity
-        v.linear.y *= lateral_sensitivity
-        v.linear.z *= vertical_sensitivity
-        v.angular.x *= angular_sensitivity
-        v.angular.z *= angular_sensitivity
+        v.linear.x *= self.horizontal_sensitivity
+        v.linear.y *= self.horizontal_sensitivity
+        v.linear.z *= self.vertical_sensitivity
+        v.angular.x *= self.angular_sensitivity
+        v.angular.z *= self.angular_sensitivity
 
         # If thrusters are off, wipe the vector.
         if not self.thrusters_enabled:
@@ -94,9 +147,6 @@ class VectorConverter(Node):
 
         # Publish our vector
         self.vector_pub.publish(v)
-
-        # Sleep a variable amt of time so this callback runs 30 times / second
-        #self.loop_rate.sleep() 
 
 
 def main(args=None):
