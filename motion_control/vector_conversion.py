@@ -45,8 +45,8 @@ class VectorConverter(Node):
         # Create a service for publishing a sensitivity msg upon request
         self.first_sense_srv = self.create_service(Trigger, 'first_sensitivity', self.first_sense_callback)
 
-        # Create a timer that checks for updated parameters 5x /second
-        self.create_timer(0.2, self.update_parameters)
+        # Create a timer that checks for updated parameters 10x /second
+        self.create_timer(0.1, self.update_parameters)
 
         # Define parameters
 
@@ -62,11 +62,13 @@ class VectorConverter(Node):
         self.horizontal_sensitivity = 0.5
         self.vertical_sensitivity = 0.5
         self.angular_sensitivity = 0.3
+        self.slow_factor = 0.5
 
         # Defines the settings that the GUI can actually control
         self.declare_parameter('horizontal_sensitivity', self.horizontal_sensitivity, sensitivity_descriptor)
         self.declare_parameter('vertical_sensitivity', self.vertical_sensitivity, sensitivity_descriptor)
         self.declare_parameter('angular_sensitivity', self.angular_sensitivity, sensitivity_descriptor)
+        self.declare_parameter('slow_factor', self.slow_factor, sensitivity_descriptor)
 
     # Publish our sensitivity for the first time
     # Almost the same as param_callback
@@ -74,10 +76,12 @@ class VectorConverter(Node):
         self.horizontal_sensitivity = self.get_parameter('horizontal_sensitivity').value
         self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
         self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
+        self.slow_factor = self.get_parameter('slow_factor').value
         sense_msg = Sensitivity()
         sense_msg.horizontal = self.horizontal_sensitivity
         sense_msg.vertical = self.vertical_sensitivity
         sense_msg.angular = self.angular_sensitivity
+        sense_msg.slow_factor = self.slow_factor
         self.sensitivity_pub.publish(sense_msg)
         return response
 
@@ -90,12 +94,15 @@ class VectorConverter(Node):
         # Boolean for if the sensitivities have changed or not
         change = (self.horizontal_sensitivity != self.get_parameter('horizontal_sensitivity').value 
                   or self.vertical_sensitivity != self.get_parameter('vertical_sensitivity').value
-                  or self.angular_sensitivity != self.get_parameter('angular_sensitivity').value)
+                  or self.angular_sensitivity != self.get_parameter('angular_sensitivity').value
+                  or self.slow_factor != self.get_parameter('slow_factor').value
+                  )
 
         # Update the values of our settings to reflect the parameters
         self.horizontal_sensitivity = self.get_parameter('horizontal_sensitivity').value
         self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
         self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
+        self.slow_factor = self.get_parameter('slow_factor').value
         
         # Populate a sensitivity message and publish it
         # Used by the camera viewer to show to the pilot
@@ -104,6 +111,7 @@ class VectorConverter(Node):
             sense_msg.horizontal = self.horizontal_sensitivity
             sense_msg.vertical = self.vertical_sensitivity
             sense_msg.angular = self.angular_sensitivity
+            sense_msg.slow_factor = self.slow_factor
             self.sensitivity_pub.publish(sense_msg)
 
 
@@ -122,6 +130,14 @@ class VectorConverter(Node):
 
         self.cached_input = joy.buttons[8]
 
+        # Enable or disable slow-mo
+        # If slow-mo button is not pressed, set the scalar to 1.
+        if joy.buttons[4]:
+            slow_scale = self.slow_factor
+        else:
+            slow_scale = 1.0
+
+
         # Create a twist message and populate it with joystick input
         # x is forwards, y is left, z is up.
         v = Twist()
@@ -134,12 +150,12 @@ class VectorConverter(Node):
         # We skip angular.y because no pitch control... sadge...
         v.angular.z = joy.axes[3]
 
-        # Scale effort values based on sensitivity
-        v.linear.x *= self.horizontal_sensitivity
-        v.linear.y *= self.horizontal_sensitivity
-        v.linear.z *= self.vertical_sensitivity
-        v.angular.x *= self.angular_sensitivity
-        v.angular.z *= self.angular_sensitivity
+        # Scale effort values based on sensitivity and slow factor
+        v.linear.x *= (self.horizontal_sensitivity * slow_scale)
+        v.linear.y *= (self.horizontal_sensitivity * slow_scale)
+        v.linear.z *= (self.vertical_sensitivity * slow_scale)
+        v.angular.x *= (self.angular_sensitivity * slow_scale)
+        v.angular.z *= (self.angular_sensitivity * slow_scale)
 
         # If thrusters are off, wipe the vector.
         if not self.thrusters_enabled:
