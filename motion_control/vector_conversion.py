@@ -118,7 +118,7 @@ class VectorConverter(Node):
     def joy_callback(self, joy):
 
         # Enable or disable thrusters based on button press
-        if joy.buttons[8] and not self.cached_input:
+        if joy.buttons[3] and not self.cached_input:
             self.thrusters_enabled = not self.thrusters_enabled
             if self.thrusters_enabled: self.log.info("Thrusters enabled")
             else: self.log.info("Thrusters disabled")
@@ -128,11 +128,11 @@ class VectorConverter(Node):
             thruster_srv.data = self.thrusters_enabled
             self.future = self.thruster_status_client.call_async(thruster_srv)
 
-        self.cached_input = joy.buttons[8]
+        self.cached_input = joy.buttons[3]
 
         # Enable or disable slow-mo
         # If slow-mo button is not pressed, set the scalar to 1.
-        if joy.buttons[4]:
+        if joy.buttons[1]:
             slow_scale = self.slow_factor
         else:
             slow_scale = 1.0
@@ -143,12 +143,12 @@ class VectorConverter(Node):
         v = Twist()
         v.linear.x = joy.axes[1]
         v.linear.y = joy.axes[0]
-        v.linear.z = joy.axes[4]
+        v.linear.z = joy.axes[2]
 
         # Get roll effort from the controller triggers
-        v.angular.x = (joy.axes[2] - joy.axes[5]) / 2
+        v.angular.x = joy.axes[3]
         # We skip angular.y because no pitch control... sadge...
-        v.angular.z = joy.axes[3]
+        v.angular.z = -joy.axes[4]
 
         # Scale effort values based on sensitivity and slow factor
         v.linear.x *= (self.horizontal_sensitivity * slow_scale)
