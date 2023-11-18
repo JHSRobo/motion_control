@@ -18,7 +18,6 @@ from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange
 from std_srvs.srv import SetBool, Trigger
 
 from core.msg import Sensitivity
-import time
 
 
 # This is the class that ROS2 spins up as a node
@@ -47,6 +46,9 @@ class VectorConverter(Node):
 
         # Create a timer that checks for updated parameters 10x /second
         self.create_timer(0.1, self.update_parameters)
+
+        # The following is used for handling a joystick bug
+        self.initialized_axes = [False, False, False, False, False]
 
         # Define parameters
 
@@ -137,18 +139,24 @@ class VectorConverter(Node):
         else:
             slow_scale = 1.0
 
+        # The following code is for a bug with our joysticks.
+        # Before the axes recieve any input, they broadcast a value of 1.0
+        # even when in neutral position. So this code fixes that.
+        for i in range(len(self.initialized_axes)):
+            if not (joy.axes[i] == 1.0 or joy.axes[i] == -1.0):
+                self.initialized_axes[i] = True
 
         # Create a twist message and populate it with joystick input
         # x is forwards, y is left, z is up.
         v = Twist()
-        v.linear.x = joy.axes[1]
-        v.linear.y = joy.axes[0]
-        v.linear.z = joy.axes[2]
+        if self.initialized_axes[1]: v.linear.x = joy.axes[1]
+        if self.initialized_axes[0]: v.linear.y = joy.axes[0]
+        if self.initialized_axes[2]: v.linear.z = joy.axes[2]
 
         # Get roll effort from the controller triggers
-        v.angular.x = joy.axes[4]
+        if self.initialized_axes[4]: v.angular.x = joy.axes[4]
         # We skip angular.y because no pitch control... sadge...
-        v.angular.z = joy.axes[3]
+        if self.initialized_axes[3]: v.angular.z = joy.axes[3]
 
         # Scale effort values based on sensitivity and slow factor
         v.linear.x *= (self.horizontal_sensitivity * slow_scale)
