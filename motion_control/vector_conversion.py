@@ -146,9 +146,9 @@ class VectorConverter(Node):
         v.linear.z = joy.axes[2]
 
         # Get roll effort from the controller triggers
-        v.angular.x = joy.axes[3]
+        v.angular.x = joy.axes[4]
         # We skip angular.y because no pitch control... sadge...
-        v.angular.z = -joy.axes[4]
+        v.angular.z = joy.axes[3]
 
         # Scale effort values based on sensitivity and slow factor
         v.linear.x *= (self.horizontal_sensitivity * slow_scale)
