@@ -154,7 +154,7 @@ class VectorConverter(Node):
         if self.initialized_axes[2]: v.linear.z = joy.axes[2]
 
         # Get roll effort from the controller triggers
-        if self.initialized_axes[4]: v.angular.x = joy.axes[4]
+        if self.initialized_axes[4]: v.angular.x = -joy.axes[4]
         # We skip angular.y because no pitch control... sadge...
         if self.initialized_axes[3]: v.angular.z = joy.axes[3]
 
