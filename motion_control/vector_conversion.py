@@ -17,6 +17,7 @@ from sensor_msgs.msg import Joy
 from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange
 from std_srvs.srv import SetBool, Trigger
 
+import math
 from core.msg import Sensitivity
 
 
@@ -163,17 +164,19 @@ class VectorConverter(Node):
         # We skip angular.y because no pitch control... sadge...
         if self.initialized_axes[3]: v.angular.z = joy.axes[3]
 
-        # Scale effort values based on sensitivity and slow factor
-        # The -1 * inversion controls whether horizontals are flipped
+        # Rotate linears by 105 degrees if inversion is active
         if self.inversion:
-            inv = -1
-        else:
-            inv = 1
-        v.linear.x *= (self.horizontal_sensitivity * slow_scale * inv)
-        v.linear.y *= (self.horizontal_sensitivity * slow_scale * inv)
+            theta = math.atan2(v.linear.y, v.linear.x)
+            magnitude = math.hypot(v.linear.x, v.linear.y)
+            theta += math.radians(105)
+            v.linear.y = magnitude * math.sin(theta)
+            v.linear.x = magnitude + math.cos(theta)
+
+        v.linear.x *= (self.horizontal_sensitivity * slow_scale)
+        v.linear.y *= (self.horizontal_sensitivity * slow_scale)
         v.linear.z *= (self.vertical_sensitivity * slow_scale)
         v.angular.x *= (self.angular_sensitivity * slow_scale)
-        v.angular.z *= (self.angular_sensitivity * slow_scale * inv)
+        v.angular.z *= (self.angular_sensitivity * slow_scale)
 
         # If thrusters are off, wipe the vector.
         if not self.thrusters_enabled:
