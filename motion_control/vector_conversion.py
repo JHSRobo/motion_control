@@ -65,12 +65,14 @@ class VectorConverter(Node):
         self.vertical_sensitivity = 0.5
         self.angular_sensitivity = 0.3
         self.slow_factor = 0.5
+        self.inversion = False
 
         # Defines the settings that the GUI can actually control
         self.declare_parameter('horizontal_sensitivity', self.horizontal_sensitivity, sensitivity_descriptor)
         self.declare_parameter('vertical_sensitivity', self.vertical_sensitivity, sensitivity_descriptor)
         self.declare_parameter('angular_sensitivity', self.angular_sensitivity, sensitivity_descriptor)
         self.declare_parameter('slow_factor', self.slow_factor, sensitivity_descriptor)
+        self.declare_parameter('inversion', self.inversion)
 
     # Publish our sensitivity for the first time
     # Almost the same as param_callback
@@ -79,6 +81,7 @@ class VectorConverter(Node):
         self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
         self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
         self.slow_factor = self.get_parameter('slow_factor').value
+        self.inversion = self.get_parameter('inversion').value
         sense_msg = Sensitivity()
         sense_msg.horizontal = self.horizontal_sensitivity
         sense_msg.vertical = self.vertical_sensitivity
@@ -98,6 +101,7 @@ class VectorConverter(Node):
                   or self.vertical_sensitivity != self.get_parameter('vertical_sensitivity').value
                   or self.angular_sensitivity != self.get_parameter('angular_sensitivity').value
                   or self.slow_factor != self.get_parameter('slow_factor').value
+                  or self.inversion != self.get_parameter('inversion').value
                   )
 
         # Update the values of our settings to reflect the parameters
@@ -105,6 +109,7 @@ class VectorConverter(Node):
         self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
         self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
         self.slow_factor = self.get_parameter('slow_factor').value
+        self.inversion = self.get_parameter('inversion').value
         
         # Populate a sensitivity message and publish it
         # Used by the camera viewer to show to the pilot
@@ -159,11 +164,16 @@ class VectorConverter(Node):
         if self.initialized_axes[3]: v.angular.z = joy.axes[3]
 
         # Scale effort values based on sensitivity and slow factor
-        v.linear.x *= (self.horizontal_sensitivity * slow_scale)
-        v.linear.y *= (self.horizontal_sensitivity * slow_scale)
+        # The -1 * inversion controls whether horizontals are flipped
+        if self.inversion:
+            inv = -1
+        else:
+            inv = 1
+        v.linear.x *= (self.horizontal_sensitivity * slow_scale * inv)
+        v.linear.y *= (self.horizontal_sensitivity * slow_scale * inv)
         v.linear.z *= (self.vertical_sensitivity * slow_scale)
         v.angular.x *= (self.angular_sensitivity * slow_scale)
-        v.angular.z *= (self.angular_sensitivity * slow_scale)
+        v.angular.z *= (self.angular_sensitivity * slow_scale * inv)
 
         # If thrusters are off, wipe the vector.
         if not self.thrusters_enabled:
