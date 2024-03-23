@@ -167,10 +167,17 @@ class VectorConverter(Node):
         # Rotate linears by 105 degrees if inversion is active
         if self.inversion:
             theta = math.atan2(v.linear.y, v.linear.x)
+            #self.log.info(str(theta))
             magnitude = math.hypot(v.linear.x, v.linear.y)
-            theta += math.radians(105)
+            #self.log.info(str(magnitude))
+            theta -= math.radians(105)
+
+            self.log.info("x: {}".format(math.cos(theta)))
+            self.log.info("y: {}".format(math.sin(theta)))
+            self.log.info(str(magnitude))
+
             v.linear.y = magnitude * math.sin(theta)
-            v.linear.x = magnitude + math.cos(theta)
+            v.linear.x = magnitude * math.cos(theta)
 
         v.linear.x *= (self.horizontal_sensitivity * slow_scale)
         v.linear.y *= (self.horizontal_sensitivity * slow_scale)
