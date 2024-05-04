@@ -124,73 +124,74 @@ class VectorConverter(Node):
 
 
     def joy_callback(self, joy):
-
-        # Enable or disable thrusters based on button press
-        if joy.buttons[3] and not self.cached_input:
-            self.thrusters_enabled = not self.thrusters_enabled
-            if self.thrusters_enabled: self.log.info("Thrusters enabled")
-            else: self.log.info("Thrusters disabled")
-
-            # Update camera viewer with thruster status
-            thruster_srv = SetBool.Request()
-            thruster_srv.data = self.thrusters_enabled
-            self.future = self.thruster_status_client.call_async(thruster_srv)
-
-        self.cached_input = joy.buttons[3]
-
-        # Enable or disable slow-mo
-        # If slow-mo button is not pressed, set the scalar to 1.
-        if joy.buttons[1]:
-            slow_scale = self.slow_factor
-        else:
-            slow_scale = 1.0
-
-        # The following code is for a bug with our joysticks.
-        # Before the axes recieve any input, they broadcast a value of 1.0
-        # even when in neutral position. So this code fixes that.
-        for i in range(len(self.initialized_axes)):
-            if not (joy.axes[i] == 1.0 or joy.axes[i] == -1.0):
-                self.initialized_axes[i] = True
-
-        # Create a twist message and populate it with joystick input
-        # x is forwards, y is left, z is up.
-        v = Twist()
-        if self.initialized_axes[1]: v.linear.x = joy.axes[1]
-        if self.initialized_axes[0]: v.linear.y = joy.axes[0]
-        if self.initialized_axes[2]: v.linear.z = joy.axes[2]
-
-        # Get roll effort from the controller triggers
-        if self.initialized_axes[4]: v.angular.x = -joy.axes[4]
-        # We skip angular.y because no pitch control... sadge...
-        if self.initialized_axes[3]: v.angular.z = joy.axes[3]
-
-        # Rotate linears by 105 degrees if inversion is active
-        if self.inversion:
-            theta = math.atan2(v.linear.y, v.linear.x)
-            #self.log.info(str(theta))
-            magnitude = math.hypot(v.linear.x, v.linear.y)
-            #self.log.info(str(magnitude))
-            theta -= math.radians(105)
-
-            self.log.info("x: {}".format(math.cos(theta)))
-            self.log.info("y: {}".format(math.sin(theta)))
-            self.log.info(str(magnitude))
-
-            v.linear.y = magnitude * math.sin(theta)
-            v.linear.x = magnitude * math.cos(theta)
-
-        v.linear.x *= (self.horizontal_sensitivity * slow_scale)
-        v.linear.y *= (self.horizontal_sensitivity * slow_scale)
-        v.linear.z *= (self.vertical_sensitivity * slow_scale)
-        v.angular.x *= (self.angular_sensitivity * slow_scale)
-        v.angular.z *= (self.angular_sensitivity * slow_scale)
-
-        # If thrusters are off, wipe the vector.
-        if not self.thrusters_enabled:
-            v = Twist()
-
-        # Publish our vector
-        self.vector_pub.publish(v)
+        self.autonomous_task = self.get_parameter('autonomous_task').value
+        if not self.autonomous_task:
+          # Enable or disable thrusters based on button press
+          if joy.buttons[3] and not self.cached_input:
+              self.thrusters_enabled = not self.thrusters_enabled
+              if self.thrusters_enabled: self.log.info("Thrusters enabled")
+              else: self.log.info("Thrusters disabled")
+  
+              # Update camera viewer with thruster status
+              thruster_srv = SetBool.Request()
+              thruster_srv.data = self.thrusters_enabled
+              self.future = self.thruster_status_client.call_async(thruster_srv)
+  
+          self.cached_input = joy.buttons[3]
+  
+          # Enable or disable slow-mo
+          # If slow-mo button is not pressed, set the scalar to 1.
+          if joy.buttons[1]:
+              slow_scale = self.slow_factor
+          else:
+              slow_scale = 1.0
+  
+          # The following code is for a bug with our joysticks.
+          # Before the axes recieve any input, they broadcast a value of 1.0
+          # even when in neutral position. So this code fixes that.
+          for i in range(len(self.initialized_axes)):
+              if not (joy.axes[i] == 1.0 or joy.axes[i] == -1.0):
+                  self.initialized_axes[i] = True
+  
+          # Create a twist message and populate it with joystick input
+          # x is forwards, y is left, z is up.
+          v = Twist()
+          if self.initialized_axes[1]: v.linear.x = joy.axes[1]
+          if self.initialized_axes[0]: v.linear.y = joy.axes[0]
+          if self.initialized_axes[2]: v.linear.z = joy.axes[2]
+  
+          # Get roll effort from the controller triggers
+          if self.initialized_axes[4]: v.angular.x = -joy.axes[4]
+          # We skip angular.y because no pitch control... sadge...
+          if self.initialized_axes[3]: v.angular.z = joy.axes[3]
+  
+          # Rotate linears by 105 degrees if inversion is active
+          if self.inversion:
+              theta = math.atan2(v.linear.y, v.linear.x)
+              #self.log.info(str(theta))
+              magnitude = math.hypot(v.linear.x, v.linear.y)
+              #self.log.info(str(magnitude))
+              theta -= math.radians(105)
+  
+              self.log.info("x: {}".format(math.cos(theta)))
+              self.log.info("y: {}".format(math.sin(theta)))
+              self.log.info(str(magnitude))
+  
+              v.linear.y = magnitude * math.sin(theta)
+              v.linear.x = magnitude * math.cos(theta)
+  
+          v.linear.x *= (self.horizontal_sensitivity * slow_scale)
+          v.linear.y *= (self.horizontal_sensitivity * slow_scale)
+          v.linear.z *= (self.vertical_sensitivity * slow_scale)
+          v.angular.x *= (self.angular_sensitivity * slow_scale)
+          v.angular.z *= (self.angular_sensitivity * slow_scale)
+  
+          # If thrusters are off, wipe the vector.
+          if not self.thrusters_enabled:
+              v = Twist()
+  
+          # Publish our vector
+          self.vector_pub.publish(v)
 
 
 def main(args=None):
