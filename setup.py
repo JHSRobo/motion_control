@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'vector_conversion = motion_control.vector_conversion:main',
+            'hotas_conversion = motion_control.hotas_conversion:main',
         ],
     },
 )

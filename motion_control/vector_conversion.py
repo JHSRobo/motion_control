@@ -38,7 +38,7 @@ class VectorConverter(Node):
         # Declare Publishers and Subscribers
         self.vector_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.sensitivity_pub = self.create_publisher(Sensitivity, 'sensitivity', 10)
-        self.joy_sub = self.create_subscription(Joy, 'joy', self.joy_callback, 10)
+        self.joy_sub = self.create_subscription(Joy, '/joy', self.joy_callback, 10)
 
         # Create a service for updating the camera feed with thruster status
         self.thruster_status_client = self.create_client(SetBool, 'thruster_status')
@@ -157,7 +157,7 @@ class VectorConverter(Node):
         v = Twist()
         if self.initialized_axes[1]: v.linear.x = joy.axes[1]
         if self.initialized_axes[0]: v.linear.y = joy.axes[0]
-        if self.initialized_axes[2]: v.linear.z = joy.axes[2]
+        if self.initialized_axes[4]: v.linear.z = joy.axes[2]
 
         # Get roll effort from the controller triggers
         if self.initialized_axes[4]: v.angular.x = -joy.axes[4]
