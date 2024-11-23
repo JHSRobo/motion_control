@@ -12,6 +12,7 @@
 import rclpy
 from rclpy.node import Node
 
+from std_msgs.msg import Bool
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 from rcl_interfaces.msg import ParameterDescriptor, FloatingPointRange
@@ -32,12 +33,14 @@ class VectorConverter(Node):
         # 30 hz loop to limit program speed, so we aren't crunching #s all the time.
         self.loop_rate = self.create_rate(30)
 
-        self.thrusters_enabled = False
+        self.thrusters_enabled = Bool()
+        self.thrusters_enabled.data = False
         self.cached_input = False
         
         # Declare Publishers and Subscribers
         self.vector_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.sensitivity_pub = self.create_publisher(Sensitivity, 'sensitivity', 10)
+        self.thruster_status_pub = self.create_publisher(Bool, 'thruster_status', 10)
         self.joy_sub = self.create_subscription(Joy, 'joy', self.joy_callback, 10)
 
         # Create a service for updating the camera feed with thruster status
@@ -127,13 +130,13 @@ class VectorConverter(Node):
 
         # Enable or disable thrusters based on button press
         if joy.buttons[3] and not self.cached_input:
-            self.thrusters_enabled = not self.thrusters_enabled
-            if self.thrusters_enabled: self.log.info("Thrusters enabled")
+            self.thrusters_enabled.data = not self.thrusters_enabled.data
+            if self.thrusters_enabled.data: self.log.info("Thrusters enabled")
             else: self.log.info("Thrusters disabled")
 
             # Update camera viewer with thruster status
             thruster_srv = SetBool.Request()
-            thruster_srv.data = self.thrusters_enabled
+            thruster_srv.data = self.thrusters_enabled.data
             self.future = self.thruster_status_client.call_async(thruster_srv)
 
         self.cached_input = joy.buttons[3]
@@ -185,9 +188,8 @@ class VectorConverter(Node):
         v.angular.x *= (self.angular_sensitivity * slow_scale)
         v.angular.z *= (self.angular_sensitivity * slow_scale)
 
-        # If thrusters are off, wipe the vector.
-        if not self.thrusters_enabled:
-            v = Twist()
+        # If thrusters are off, tell bottomside to not control thrusters
+        self.thruster_status_pub.publish(self.thrusters_enabled)
 
         # Publish our vector
         self.vector_pub.publish(v)
