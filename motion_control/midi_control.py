@@ -51,9 +51,9 @@ class MidiController(Node):
         }
 
         # ROS parameter client setup
-        self.param_client = self.create_client(SetParameters, '/motion_control/set_parameters')
+        self.param_client = self.create_client(SetParameters, '/vector_conversion/set_parameters')
         while not self.param_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn('Waiting for /motion_control/set_parameters service...')
+            self.get_logger().warn('Waiting for /vector_conversion/set_parameters service...')
 
         # MIDI setup
         self.midi = rtmidi.MidiIn()

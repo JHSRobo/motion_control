@@ -26,7 +26,7 @@ from core.msg import Sensitivity
 class VectorConverter(Node):
 
     def __init__(self):
-        super().__init__('motion_control')
+        super().__init__('vector_conversion')
         
         self.log = self.get_logger() # Quick reference for logging
 
