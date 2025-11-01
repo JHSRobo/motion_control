@@ -9,6 +9,9 @@ class MidiController(Node):
     def __init__(self):
         super().__init__('midi_controller')
 
+        self.servo_slider = {
+            3: "angle"
+        }
         # Slider mapping
         # When midi controller calls, sets parameter based on this dictionary
         self.sensitivity_map = {
@@ -50,11 +53,15 @@ class MidiController(Node):
             71: 'rapid'
         }
 
-        # ROS parameter client setup
+        # ROS parameter client setup for motion control
         self.param_client = self.create_client(SetParameters, '/vector_conversion/set_parameters')
         while not self.param_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().warn('Waiting for /vector_conversion/set_parameters service...')
-
+       
+        
+        # ROS parameter client setup for servo control
+        self.param_client = self.create_client(SetParameters, '/servo_controller/set_parameters')
+        
         # MIDI setup
         self.midi = rtmidi.MidiIn()
         try:
@@ -110,7 +117,12 @@ class MidiController(Node):
         else:
             self.get_logger().info(f"{control_name} pressed (value: {value})")
 
-
+        #servo
+        if control_number in self.servo_slider:
+            field = self.servo_slider[control_number]
+            self.set_parameter_on_target(field, rounded)
+        else:
+            self.get_logger().info(f"{control_name} pressed (value: {value})")
 def main(args=None):
     rclpy.init(args=args)
     node = MidiController()
