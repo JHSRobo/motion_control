@@ -22,11 +22,11 @@ class MidiController(Node):
         # Easy to change, simply change value for what preset pilot wants
         #comment any changes the the section next to value changeds
         self.presets = {
-            'low': {
+            'slow': {
                 'horizontal_sensitivity': 0.2, 
                 'vertical_sensitivity': 0.2,
                 'angular_sensitivity': 0.2,
-                'slow_factor': 0.8
+                'slow_factor': 0.5
             },
             'medium': {
                 'horizontal_sensitivity': 0.5,
@@ -34,20 +34,20 @@ class MidiController(Node):
                 'angular_sensitivity': 0.5,
                 'slow_factor': 0.5
             },
-            'high': {
+            'rapid': {
                 'horizontal_sensitivity': 0.8,
                 'vertical_sensitivity': 0.8,
                 'angular_sensitivity': 0.8,
-                'slow_factor': 0.2
+                'slow_factor': 0.5
             }
         }
 
         # Button mapping for presets
         # when specific button pressed, sets these presets
         self.preset_buttons = {
-            39: 'low',
+            39: 'slow',
             55: 'medium',
-            71: 'high'
+            71: 'rapid'
         }
 
         # ROS parameter client setup
