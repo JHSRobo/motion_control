@@ -35,9 +35,9 @@ class MidiController(Node):
                 'slow_factor': 0.5
             },
             'rapid': {
-                'horizontal_sensitivity': 0.8,
-                'vertical_sensitivity': 0.8,
-                'angular_sensitivity': 0.8,
+                'horizontal_sensitivity': 1.0,
+                'vertical_sensitivity': 1.0,
+                'angular_sensitivity': 1.0,
                 'slow_factor': 0.5
             }
         }
