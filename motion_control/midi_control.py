@@ -2,13 +2,14 @@ import rclpy
 from rclpy.node import Node
 from rcl_interfaces.srv import SetParameters
 from rcl_interfaces.msg import Parameter as ROSParameter, ParameterType
-import rtmidi
+import rtmidi #use MIDIUtil library
 
 
 class MidiController(Node):
     def __init__(self):
         super().__init__('midi_controller')
 
+        # dictionary for servo button mapping, kept it as dictionary just for simplicity since other button mappings are kept in dictionary. May change later.
         self.servo_slider = {
             3: "angle"
         }
@@ -24,12 +25,13 @@ class MidiController(Node):
         # Preset definitions
         # Easy to change, simply change value for what preset pilot wants
         #comment any changes the the section next to value changeds
+        # Note: Value cannot exceed 1.0.
         self.presets = {
             'slow': {
                 'horizontal_sensitivity': 0.2, 
                 'vertical_sensitivity': 0.2,
                 'angular_sensitivity': 0.2,
-                'slow_factor': 0.5
+                'slow_factor': 0.5 #keeping slow factor as a constant for these sensitivities.
             },
             'medium': {
                 'horizontal_sensitivity': 0.5,
@@ -38,15 +40,15 @@ class MidiController(Node):
                 'slow_factor': 0.5
             },
             'rapid': {
-                'horizontal_sensitivity': 0.8,
-                'vertical_sensitivity': 0.8,
-                'angular_sensitivity': 0.8,
+                'horizontal_sensitivity': 1.0, #harry's sensitivities
+                'vertical_sensitivity': 1.0,
+                'angular_sensitivity': 1.0,
                 'slow_factor': 0.5
             }
         }
 
         # Button mapping for presets
-        # when specific button pressed, sets these presets
+        # when specific button pressed, sets these presets. values above, button mapping below.
         self.preset_buttons = {
             39: 'slow',
             55: 'medium',
@@ -63,7 +65,7 @@ class MidiController(Node):
         self.param_client = self.create_client(SetParameters, '/servo_controller/set_parameters')
         
         # MIDI setup
-        self.midi = rtmidi.MidiIn()
+        self.midi = rtmidi.MidiIn() #opens input to the midi controller (check midiutil documentation)
         try:
             port = next(i for i, p in enumerate(self.midi.get_ports()) if "nanoKONTROL2" in p)
         except StopIteration:
@@ -78,11 +80,12 @@ class MidiController(Node):
             self.get_logger().warn(f"Preset '{preset_name}' not found.")
             return
 
-        self.get_logger().info(f"Applying preset: {preset_name}")
+        self.get_logger().info(f"Applying preset: {preset_name}") 
         for field, value in preset.items():
             self.set_parameter_on_target(field, value)
 
-    def set_parameter_on_target(self, field, value):
+    # sets the parameter to the value from MIDI sliders based on button mapping and value recieved
+    def set_parameter_on_target(self, field, value): 
         param = ROSParameter()
         param.name = field
         param.value.type = ParameterType.PARAMETER_DOUBLE
@@ -98,26 +101,28 @@ class MidiController(Node):
 
     #midi callback for manipulating msgs
     def midi_callback(self, message, timestamp):
-        control_number = message[0][1]
-        value = message[0][2]
+        control_number = message[0][1] # message 1 is the number of the control, or button. USed in dictionary, for example control num 0 is slider 1.
+        value = message[0][2] # message 2 is the value, 1 - 127, that the midi controller is giving for that button.
 
-        # Check for preset activation
+        # conditional logic that Checks for preset activation applies the preset
         if control_number in self.preset_buttons and value > 0:
             preset_name = self.preset_buttons[control_number]
-            self.apply_preset(preset_name)
+            self.apply_preset(preset_name) # applies the preset only if teh control number is in the button mapping for presets
             return
 
-        # Handle sliders
+        #handles sliders for sensitivity
         control_name = self.sensitivity_map.get(control_number, f"Unknown ({control_number})")
-        rounded = round(value / 127.0, 2)
+        # Rounds the values
+        rounded = round(value / 127.0, 2) # divides the value by 127 to get the same value as motion control (so it is 0 - 1.0, even though midi is 0 - 127)
 
+        # changes the sensitivity for sliders only if the control number is found in the dictionary for sensitivity
         if control_number in self.sensitivity_map:
             field = self.sensitivity_map[control_number]
             self.set_parameter_on_target(field, rounded)
         else:
-            self.get_logger().info(f"{control_name} pressed (value: {value})")
+            self.get_logger().info(f"{control_name} pressed (value: {value})") #logs the value and control name for ease of logging and debugging
 
-        #servo
+        # servo motor conditional logic
         if control_number in self.servo_slider:
             field = self.servo_slider[control_number]
             self.set_parameter_on_target(field, rounded)
