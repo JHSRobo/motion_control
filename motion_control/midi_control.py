@@ -85,10 +85,10 @@ class MidiController(Node):
             self.set_parameter_on_target(field, value)
 
     # sets the parameter to the value from MIDI sliders based on button mapping and value recieved
-    def set_parameter_on_target(self, field, value): 
+    def set_parameter_on_target(self, field, value, param_type = ParamType.PARAMETER_DOUBLE): 
         param = ROSParameter()
         param.name = field
-        param.value.type = ParameterType.PARAMETER_DOUBLE
+        param.value.type = ParamType.PARAMETER_DOUBLE
         param.value.double_value = value
 
         request = SetParameters.Request()
