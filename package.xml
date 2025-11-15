@@ -4,7 +4,7 @@
   <name>motion_control</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="randallj24@student.jhs.net">James Randall</maintainer>
+  <maintainer email="jackdfrings@protonmail.com">Jack Frings</maintainer>
   <license>MIT</license>
 
   <test_depend>ament_copyright</test_depend>
@@ -16,7 +16,6 @@
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>std_msgs</depend>
-  <depend>tf2_ros</depend>
   <depend>core</depend>
   <depend>rcl_interfaces</depend>
 
