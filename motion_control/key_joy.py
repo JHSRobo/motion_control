@@ -100,6 +100,34 @@ class KeyboardJoy(Node):
         if '0' in just_pressed:
             buttons[1] = 1 - buttons[1]
 
+        # camera switching buttons mappings
+
+        
+        if '1' in just_pressed:
+            buttons[4] = 1
+        else:
+            buttons[4] = 0
+
+        if '2' in just_pressed:
+            buttons[5] = 1
+        else:
+            buttons[5] = 0
+
+        if '3' in just_pressed:
+            buttons[6] = 1
+        else:
+            buttons[6] = 0
+
+        if '4' in just_pressed:
+            buttons[7] = 1
+        else:
+            buttons[7] = 0
+
+        if '5' in just_pressed:
+            buttons[8] = 1
+        else:
+            buttons[8] = 0
+
         # build and publish the joy message
         msg = Joy()
         msg.axes = axes
