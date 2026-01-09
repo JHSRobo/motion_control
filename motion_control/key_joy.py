@@ -104,29 +104,24 @@ class KeyboardJoy(Node):
 
         
         if '1' in just_pressed:
-            buttons[4] = 1
-        else:
-            buttons[4] = 0
+            buttons[4] = 1 - buttons[4]
+        
 
         if '2' in just_pressed:
-            buttons[5] = 1
-        else:
-            buttons[5] = 0
+            buttons[5] = 1 - buttons[5]
+   
 
         if '3' in just_pressed:
-            buttons[6] = 1
-        else:
-            buttons[6] = 0
+            buttons[6] = 1 - buttons[6]
+ 
 
         if '4' in just_pressed:
-            buttons[7] = 1
-        else:
-            buttons[7] = 0
+            buttons[7] = 1 - buttons[7]
+ 
 
         if '5' in just_pressed:
-            buttons[8] = 1
-        else:
-            buttons[8] = 0
+            buttons[8] = 1 - buttons[8]
+   
 
         # build and publish the joy message
         msg = Joy()
