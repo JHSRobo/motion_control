@@ -13,15 +13,15 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='James Randall',
-    maintainer_email='randallj24@student.jhs.net',
+    maintainer='Jack Frings',
+    maintainer_email='jackdfrings@protonmail.com',
     description='TODO: Package description',
     license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'vector_conversion = motion_control.vector_conversion:main',
-            'midi_control = motion_control.midi_control:main'
+            'midi_control = motion_control.midi_control:main',
             'key_joy = motion_control.key_joy:main'
         ],
     },
