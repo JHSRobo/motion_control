@@ -147,11 +147,11 @@ class MidiController(Node):
                 field,
                 angle,
                 self.servo_client,
-                param_type=ParameterType.PARAMETER_INTEGER  # FIX: use a valid enum
+                param_type=ParameterType.PARAMETER_INTEGER  # changes to integer type not double, otherwise wouldn't work
             )
             return
 
-        # Fallback logging for unknown controls
+        #  logging for unknown controls
         self.get_logger().info(f"Unknown control {control_number} (value: {value})")
 
 
