@@ -52,7 +52,7 @@ class VectorConverter(Node):
         self.create_timer(0.1, self.update_parameters)
 
         # The following is used for handling a joystick bug
-        self.initialized_axes = [False, False, False, False, False]
+        self.initialized_axes = [False] * 6
 
         # Define parameters
 
@@ -162,9 +162,12 @@ class VectorConverter(Node):
         if self.initialized_axes[0]: v.linear.y = joy.axes[0]
         if self.initialized_axes[2]: v.linear.z = joy.axes[2]
 
-        # Get roll effort from the controller triggers
+        # Roll
         if self.initialized_axes[4]: v.angular.x = -joy.axes[4]
-        # We skip angular.y because no pitch control... sadge...
+        # Manually set pitch movement to a known constant value 
+        if int(joy.axes[6]) == 1: v.angular.y = 0.5
+        elif int(joy.axes[6]) == -1: v.angular.y = -0.5
+        # Yaw
         if self.initialized_axes[3]: v.angular.z = joy.axes[3]
 
         # Rotate linears by 105 degrees if inversion is active
