@@ -51,9 +51,6 @@ class VectorConverter(Node):
         # Create a timer that checks for updated parameters 10x /second
         self.create_timer(0.1, self.update_parameters)
 
-        # The following is used for handling a joystick bug
-        self.initialized_axes = [False] * 6
-
         # Define parameters
 
         # Next couple lines are for creating a "parameter descriptiong"
@@ -148,27 +145,21 @@ class VectorConverter(Node):
         else:
             slow_scale = 1.0
 
-        # The following code is for a bug with our joysticks.
-        # Before the axes recieve any input, they broadcast a value of 1.0
-        # even when in neutral position. So this code fixes that.
-        for i in range(len(self.initialized_axes)):
-            if not (joy.axes[i] == 1.0 or joy.axes[i] == -1.0):
-                self.initialized_axes[i] = True
-
         # Create a twist message and populate it with joystick input
         # x is forwards, y is left, z is up.
         v = Twist()
-        if self.initialized_axes[1]: v.linear.x = joy.axes[1]
-        if self.initialized_axes[0]: v.linear.y = joy.axes[0]
-        if self.initialized_axes[2]: v.linear.z = joy.axes[2]
+
+        v.linear.x = joy.axes[1]
+        v.linear.y = joy.axes[0]
+        v.linear.z = joy.axes[2]
 
         # Roll
-        if self.initialized_axes[4]: v.angular.x = -joy.axes[4]
+        v.angular.x = -joy.axes[4]
         # Manually set pitch movement to a known constant value 
         if int(joy.axes[6]) == 1: v.angular.y = 0.5
         elif int(joy.axes[6]) == -1: v.angular.y = -0.5
         # Yaw
-        if self.initialized_axes[3]: v.angular.z = joy.axes[3]
+        v.angular.z = joy.axes[3]
 
         # Rotate linears by 105 degrees if inversion is active
         if self.inversion:
