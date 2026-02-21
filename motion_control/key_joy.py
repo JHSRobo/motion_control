@@ -96,6 +96,9 @@ class KeyboardJoy(Node):
         if 't' in just_pressed:
             buttons[3] = 1 - buttons[3]
 
+        if 'g' in just_pressed:
+            buttons[0] = 1- buttons[0]
+
         # slow mode (button 1)
         if '0' in just_pressed:
             buttons[1] = 1 - buttons[1]
