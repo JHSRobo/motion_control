@@ -14,6 +14,11 @@ class MidiController(Node):
             3: "angle"
         }
 
+        self.brushed_motor = {
+            #change to what slide is needed
+            2: "brushed_motor_speed
+        }
+        
         # Slider mapping
         # When midi controller calls, sets parameter based on this dictionary
         self.sensitivity_map = {
