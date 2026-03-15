@@ -15,8 +15,8 @@ class MidiController(Node):
         }
 
         self.brushed_motor = {
-            #change to what slide is needed
-            2: "brushed_motor_speed
+            #change to what slide r is needed
+            2: "brushed_motor_speed"
         }
         
         # Slider mapping
@@ -29,8 +29,8 @@ class MidiController(Node):
         }
 
         # Preset definitions
-        # Easy to change, simply change value for what preset pilot wants
-        # Note: Value cannot exceed 1.0.
+        # Easy to change, just change value for what preset pilot wants
+        
         self.presets = {
             'slow': {
                 'horizontal_sensitivity': 0.2,
@@ -63,17 +63,20 @@ class MidiController(Node):
         # ROS clients
         self.vector_client = self.create_client(SetParameters, '/vector_conversion/set_parameters')
         self.servo_client = self.create_client(SetParameters, '/servo_controller/set_parameters')
+        self.brushed_motor_client = self.create_client(SetParameters, '/brushed_motor/set_parameters')
 
-        # Wait for vector_conversion (required in this version)
-        while not self.vector_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn('Waiting for /vector_conversion/set_parameters service...')
+        #these were debugging so I could tell if they werent working, commented out now but kept in jsut in case
+        
+        # Wait for vector_conversion
+        #while not self.vector_client.wait_for_service(timeout_sec=1.0):
+            #self.get_logger().warn('Waiting for /vector_conversion/set_parameters service...')
 
         # Wait for servo_controller so servo updates don't silently fail
-        while not self.servo_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().warn('Waiting for /servo_controller/set_parameters service...')
+        #while not self.servo_client.wait_for_service(timeout_sec=1.0):
+            #self.get_logger().warn('Waiting for /servo_controller/set_parameters service...')
 
         # MIDI setup
-        # NOTE: if your environment uses python-rtmidi, this may need to be rtmidi.RtMidiIn()
+        
         self.midi = rtmidi.MidiIn()
         try:
             port = next(i for i, p in enumerate(self.midi.get_ports()) if "nanoKONTROL2" in p)
@@ -153,6 +156,18 @@ class MidiController(Node):
                 angle,
                 self.servo_client,
                 param_type=ParameterType.PARAMETER_INTEGER  # changes to integer type not double, otherwise wouldn't work
+            )
+            return
+
+        # Brushed motor conditional logic
+        if control_number in self.brushed_motor:
+            field = self.brushed_motor[control_number]
+            # brushed motor expects a double 0.0–1.0
+            self.set_parameter_on_target(
+                field,
+                rounded,
+                self.brushed_motor_client,
+                param_type=ParameterType.PARAMETER_DOUBLE
             )
             return
 
