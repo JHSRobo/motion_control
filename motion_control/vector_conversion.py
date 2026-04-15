@@ -64,14 +64,18 @@ class VectorConverter(Node):
         # Define the initial values for each sense
         self.horizontal_sensitivity = 0.5
         self.vertical_sensitivity = 0.5
-        self.angular_sensitivity = 0.3
+        self.yaw_sensitivity = 0.3
+        self.roll_sensitivity = 0.3
+        self.pitch_sensitivity = 0.3
         self.slow_factor = 0.5
         self.inversion = False
 
         # Defines the settings that the GUI can actually control
         self.declare_parameter('horizontal_sensitivity', self.horizontal_sensitivity, sensitivity_descriptor)
         self.declare_parameter('vertical_sensitivity', self.vertical_sensitivity, sensitivity_descriptor)
-        self.declare_parameter('angular_sensitivity', self.angular_sensitivity, sensitivity_descriptor)
+        self.declare_parameter('yaw_sensitivity', self.yaw_sensitivity, sensitivity_descriptor)
+        self.declare_parameter('roll_sensitivity', self.roll_sensitivity, sensitivity_descriptor)
+        self.declare_parameter('pitch_sensitivity', self.pitch_sensitivity, sensitivity_descriptor)
         self.declare_parameter('slow_factor', self.slow_factor, sensitivity_descriptor)
         self.declare_parameter('inversion', self.inversion)
 
@@ -80,13 +84,17 @@ class VectorConverter(Node):
     def first_sense_callback(self, request, response):
         self.horizontal_sensitivity = self.get_parameter('horizontal_sensitivity').value
         self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
-        self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
+        self.yaw_sensitivity = self.get_parameter('yaw_sensitivity').value
+        self.roll_sensitivity = self.get_parameter('roll_sensitivity').value
+        self.pitch_sensitivity = self.get_parameter('pitch_sensitivity').value
         self.slow_factor = self.get_parameter('slow_factor').value
         self.inversion = self.get_parameter('inversion').value
         sense_msg = Sensitivity()
         sense_msg.horizontal = self.horizontal_sensitivity
         sense_msg.vertical = self.vertical_sensitivity
-        sense_msg.angular = self.angular_sensitivity
+        sense_msg.yaw = self.yaw_sensitivity
+        sense_msg.roll = self.roll_sensitivity
+        sense_msg.pitch = self.pitch_sensitivity
         sense_msg.slow_factor = self.slow_factor
         self.sensitivity_pub.publish(sense_msg)
         return response
@@ -100,7 +108,9 @@ class VectorConverter(Node):
         # Boolean for if the sensitivities have changed or not
         change = (self.horizontal_sensitivity != self.get_parameter('horizontal_sensitivity').value 
                   or self.vertical_sensitivity != self.get_parameter('vertical_sensitivity').value
-                  or self.angular_sensitivity != self.get_parameter('angular_sensitivity').value
+                  or self.yaw_sensitivity != self.get_parameter('yaw_sensitivity').value
+                  or self.roll_sensitivity != self.get_parameter('roll_sensitivity').value
+                  or self.pitch_sensitivity != self.get_parameter('pitch_sensitivity').value
                   or self.slow_factor != self.get_parameter('slow_factor').value
                   or self.inversion != self.get_parameter('inversion').value
                   )
@@ -108,7 +118,9 @@ class VectorConverter(Node):
         # Update the values of our settings to reflect the parameters
         self.horizontal_sensitivity = self.get_parameter('horizontal_sensitivity').value
         self.vertical_sensitivity = self.get_parameter('vertical_sensitivity').value
-        self.angular_sensitivity = self.get_parameter('angular_sensitivity').value
+        self.yaw_sensitivity = self.get_parameter('yaw_sensitivity').value
+        self.roll_sensitivity = self.get_parameter('roll_sensitivity').value
+        self.pitch_sensitivity = self.get_parameter('pitch_sensitivity').value
         self.slow_factor = self.get_parameter('slow_factor').value
         self.inversion = self.get_parameter('inversion').value
         
@@ -118,7 +130,9 @@ class VectorConverter(Node):
             sense_msg = Sensitivity()
             sense_msg.horizontal = self.horizontal_sensitivity
             sense_msg.vertical = self.vertical_sensitivity
-            sense_msg.angular = self.angular_sensitivity
+            sense_msg.yaw = self.yaw_sensitivity
+            sense_msg.roll = self.roll_sensitivity
+            sense_msg.pitch = self.pitch_sensitivity
             sense_msg.slow_factor = self.slow_factor
             self.sensitivity_pub.publish(sense_msg)
 
@@ -156,8 +170,8 @@ class VectorConverter(Node):
         # Roll
         v.angular.x = -joy.axes[4]
         # Manually set pitch movement to a known constant value 
-        if int(joy.axes[6]) == 1: v.angular.y = 0.5
-        elif int(joy.axes[6]) == -1: v.angular.y = -0.5
+        if int(joy.axes[6]) == 1: v.angular.y = -0.5
+        elif int(joy.axes[6]) == -1: v.angular.y = 0.5
         # Yaw
         v.angular.z = joy.axes[3]
 
@@ -167,7 +181,7 @@ class VectorConverter(Node):
             #self.log.info(str(theta))
             magnitude = math.hypot(v.linear.x, v.linear.y)
             #self.log.info(str(magnitude))
-            theta -= math.radians(105)
+            theta -= math.radians(90)
 
             self.log.info("x: {}".format(math.cos(theta)))
             self.log.info("y: {}".format(math.sin(theta)))
@@ -179,8 +193,9 @@ class VectorConverter(Node):
         v.linear.x *= (self.horizontal_sensitivity * slow_scale)
         v.linear.y *= (self.horizontal_sensitivity * slow_scale)
         v.linear.z *= (self.vertical_sensitivity * slow_scale)
-        v.angular.x *= (self.angular_sensitivity * slow_scale)
-        v.angular.z *= (self.angular_sensitivity * slow_scale)
+        v.angular.x *= (self.roll_sensitivity * slow_scale)
+        v.angular.y *= (self.pitch_sensitivity * slow_scale)
+        v.angular.z *= (self.yaw_sensitivity * slow_scale)
 
         # If thrusters are off, tell bottomside to not control thrusters
         self.thruster_status_pub.publish(self.thrusters_enabled)

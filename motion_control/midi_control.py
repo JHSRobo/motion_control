@@ -24,8 +24,10 @@ class MidiController(Node):
         self.sensitivity_map = {
             7: "horizontal_sensitivity",
             6: "vertical_sensitivity",
-            5: "angular_sensitivity",
-            4: "slow_factor"
+            5: "yaw_sensitivity",
+            4: "roll_sensitivity",
+            3: "pitch_sensitivity",
+            2: "slow_factor"
         }
 
         # Preset definitions
