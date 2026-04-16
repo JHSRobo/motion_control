@@ -14,11 +14,6 @@ class MidiController(Node):
             3: "angle"
         }
 
-        self.brushed_motor = {
-            #change to what slide r is needed
-            2: "brushed_motor_speed"
-        }
-        
         # Slider mapping
         # When midi controller calls, sets parameter based on this dictionary
         self.sensitivity_map = {
@@ -65,7 +60,6 @@ class MidiController(Node):
         # ROS clients
         self.vector_client = self.create_client(SetParameters, '/vector_conversion/set_parameters')
         self.servo_client = self.create_client(SetParameters, '/servo_controller/set_parameters')
-        self.brushed_motor_client = self.create_client(SetParameters, '/brushed_motor/set_parameters')
 
         #these were debugging so I could tell if they werent working, commented out now but kept in jsut in case
         
@@ -160,30 +154,4 @@ class MidiController(Node):
                 param_type=ParameterType.PARAMETER_INTEGER  # changes to integer type not double, otherwise wouldn't work
             )
             return
-
-        # Brushed motor conditional logic
-        if control_number in self.brushed_motor:
-            field = self.brushed_motor[control_number]
-            # brushed motor expects a double 0.0–1.0
-            self.set_parameter_on_target(
-                field,
-                rounded,
-                self.brushed_motor_client,
-                param_type=ParameterType.PARAMETER_DOUBLE
-            )
-            return
-
-        #  logging for unknown controls
-        self.get_logger().info(f"Unknown control {control_number} (value: {value})")
-
-
-def main(args=None):
-    rclpy.init(args=args)
-    node = MidiController()
-    rclpy.spin(node)
-    node.destroy_node()
-    rclpy.shutdown()
-
-
-if __name__ == '__main__':
-    main()
+        #logging
