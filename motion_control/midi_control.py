@@ -11,9 +11,10 @@ class MidiController(Node):
 
         # dictionary for servo button mapping
         self.servo_slider = {
-            3: "angle"
+            1: "angle"
         }
 
+        
         # Slider mapping
         # When midi controller calls, sets parameter based on this dictionary
         self.sensitivity_map = {
@@ -154,4 +155,19 @@ class MidiController(Node):
                 param_type=ParameterType.PARAMETER_INTEGER  # changes to integer type not double, otherwise wouldn't work
             )
             return
-        #logging
+
+      
+        #  logging for unknown controls
+        self.get_logger().info(f"Unknown control {control_number} (value: {value})")
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    node = MidiController()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == '__main__':
+    main()
