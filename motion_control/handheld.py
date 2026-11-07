@@ -56,16 +56,16 @@ def parse_controller_data(data):
     display_output = []
     display_output.append("=== ROV CONTROL VECTORS ===")
     display_output.append(f"Forward/backward vector: <{l_dir_y:5.1f}, {l_deg:5.1f}°, {l_mag:5.1f}>")
-    display_output.append(f"Left/right vector:       <{l_dir_x:5.1f}, {l_deg:5.1f}°, {l_mag:5.1f}>")
-    display_output.append(f"Angular up/down vector:  <{r_dir_y:5.1f}, {r_deg:5.1f}°, {r_mag:5.1f}>")
-    display_output.append(f"Angular left/right:      <{r_dir_x:5.1f}, {r_deg:5.1f}°, {r_mag:5.1f}>")
+    display_output.append(f"Left/right vector: <{l_dir_x:5.1f}, {l_deg:5.1f}°, {l_mag:5.1f}>")
+    display_output.append(f"Angular up/down vector: <{r_dir_y:5.1f}, {r_deg:5.1f}°, {r_mag:5.1f}>")
+    display_output.append(f"Angular left/right: <{r_dir_x:5.1f}, {r_deg:5.1f}°, {r_mag:5.1f}>")
 
     if c1_circle == 0.0:
-        display_output.append(f"Vertical Vector Down:    <{l2:5.1f}>")
-        display_output.append(f"Vertical Vector Up:      <{r2:5.1f}>")
+        display_output.append(f"Vertical Vector Down: <{l2:5.1f}>")
+        display_output.append(f"Vertical Vector Up: <{r2:5.1f}>")
     elif c1_circle == 100.0:
-        display_output.append(f"Roll vector Left:        <{l2:5.1f}>")
-        display_output.append(f"Roll vector Right:       <{r2:5.1f}>")
+        display_output.append(f"Roll vector Left: <{l2:5.1f}>")
+        display_output.append(f"Roll vector Right: <{r2:5.1f}>")
 
     sys.stdout.write("\033[H\033[J")
     sys.stdout.write("\n".join(display_output) + "\n")
@@ -88,11 +88,11 @@ def main():
             break
 
     if not device_info:
-        print("PlayStation controller not found! Ensure Bluetooth is paired.")
+        print("didnt connect or something")
         return
 
     print(f"Connected to: {device_info['product_string']}")
-    print("Streaming Vector Data... (Press Ctrl+C to stop)\n")
+  
     time.sleep(1)
 
     device = hid.device()
@@ -106,7 +106,7 @@ def main():
                 parse_controller_data(data)
             time.sleep(0.01)
     except KeyboardInterrupt:
-        print("\n\nExiting controller logger.")
+     
         device.close()
 
 if __name__ == "__main__":
